@@ -1,0 +1,7 @@
+(FIXED) juliapreview.c:draw_julia and/or draw_mandelbrot:
+	SDL_UpdateRects is being passed an argument of 0 for number of 
+	rectangles to update. This should logically be 1, but it appears that
+	bugs in SDL currently make this otherwise. Check these bits if it stops
+	working with future SDL versions.
+	FIX: Oops. No, the errors I was getting were in the mandelbrot screen
+		dimensions/coords. Wheeeee.
