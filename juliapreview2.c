@@ -18,16 +18,17 @@ int WIDTH = DEFAULT_WIDTH;
 */
 
 #define DEFAULT_SIDELENGTH (350)
-int SIDE_LENGTH = DEFAULT_SIDELENGTH;
+int SIDELENGTH = DEFAULT_SIDELENGTH;
 
 /* Data structure to hold rendering regions */
-SDL_Rect render_region =
+SDL_Rect render_rect =
   {
     0,0,
     DEFAULT_SIDELENGTH, DEFAULT_SIDELENGTH
   };
 
 SDL_Surface * screen = NULL;
+const Uint8 mandelbrot_alpha = 128;
 SDL_Surface * mandelbrot_screen = NULL;
 SDL_Surface * julia_screen = NULL;
 
@@ -50,7 +51,7 @@ int RGB_PERIOD = 10;
 /* Function prototypes */
 int configure_video(int width, int height);
 int inbounds(int x, int y)
-{return (x < SIDE_LENGTH && y < SIDE_LENGTH && x >= 0 && y >= 0);}
+{return (x < SIDELENGTH && y < SIDELENGTH && x >= 0 && y >= 0);}
 
 void putPixel(SDL_Surface * screen, int x, int y, Uint32 color);
 
@@ -104,7 +105,7 @@ int main ()
   {
     printf("Rendering mandelbrot...\n");
     Uint32 start = SDL_GetTicks();
-    draw_mandelbrot(screen, mandelbrot_region, mandelbrot_screen,
+    draw_mandelbrot(mandelbrot_screen, mandelbrot_region, render_rect,
 		    colormap, MAXITERS);
     Uint32 stop = SDL_GetTicks();
     printf("  Mandelbrot took %lums\n", stop - start);
@@ -112,7 +113,7 @@ int main ()
   // Assign a c and render an initial Julia
   complex c = {.233, .53780};
   printf("Rendering initial Julia\n");
-  draw_julia(screen, julia_region, julia_screen, colormap, MAXITERS, c);
+  draw_julia(julia_screen, julia_region, render_rect, colormap, MAXITERS, c);
 
   printf("Entering main loop\n");
   // main loop!
@@ -135,9 +136,10 @@ int main ()
 		  return -1;
 		}
 	      // Redraw the Mandelbrot and current Julia in their new regions
-	      draw_mandelbrot(screen, mandelbrot_region, mandelbrot_screen,
+	      draw_mandelbrot(mandelbrot_screen, mandelbrot_region,
+			      render_rect,
 			      colormap, MAXITERS);
-	      draw_julia(screen, julia_region, julia_screen,
+	      draw_julia(julia_screen, julia_region, render_rect,
 			 colormap, MAXITERS, c);
 	      break;
 	    case SDL_KEYDOWN:
@@ -158,24 +160,24 @@ int main ()
 	int x,y;
 	if (SDL_GetMouseState(&x, &y) & SDL_BUTTON(1))
 	  {
-	    if (x >= mandelbrot_screen.x &&
-		y >= mandelbrot_screen.y &&
-		x < mandelbrot_screen.x + mandelbrot_screen.w &&
-		y < mandelbrot_screen.y + mandelbrot_screen.h)
+	    if (x >= render_rect.x &&
+		y >= render_rect.y &&
+		x < render_rect.x + render_rect.w &&
+		y < render_rect.y + render_rect.h)
 	      {
 		c.r =
 		  mandelbrot_region.topleft.r + 
-		  (x - mandelbrot_screen.x) *
+		  (x - render_rect.x) *
 		  (mandelbrot_region.bottomright.r
 		   - mandelbrot_region.topleft.r) /
-		  mandelbrot_screen.w;
+		  render_rect.w;
 		c.i =
 		  mandelbrot_region.topleft.i + 
-		  (y - mandelbrot_screen.y) *
+		  (y - render_rect.y) *
 		  (mandelbrot_region.bottomright.i
 		   - mandelbrot_region.topleft.i) /
-		  mandelbrot_screen.h;
-		draw_julia(screen, julia_region, julia_screen,
+		  render_rect.h;
+		draw_julia(julia_screen, julia_region, render_rect,
 			   colormap, MAXITERS, c);
 	      }	    
 	  }
@@ -189,20 +191,28 @@ int configure_video(int width, int height)
   SIDELENGTH = width < height ? width : height;
 
   // Reset screen portion variables
-  render_region.x = 0;
-  render_region.y = 0;
-  render_region.w = WIDTH/2;
-  render_region.h = HEIGHT;
+  render_rect.x = 0;
+  render_rect.y = 0;
+  render_rect.w = SIDELENGTH;
+  render_rect.h = SIDELENGTH;
 
-  // Delete and (re)assign the main screen
-  
-  screen = SDL_SetVideoMode(WIDTH,HEIGHT,32,SDL_SWSURFACE | SDL_RESIZABLE);
+  // Delete and (re)assign the main screen  
+  screen = SDL_SetVideoMode(SIDELENGTH,SIDELENGTH,32,SDL_SWSURFACE | SDL_RESIZABLE);
   if (screen == NULL) { printf("Video modeset failed\n"); return -1; };
 
   // Delete the old backframes, if they exist, and create new ones
-  if (mandelbrot_screen) SDL_FreeSurface(mandelbrot_screen);
-  if (julia_screen) SDL_FreeSurface(julia_screen);
-
+  if (mandelbrot_screen)
+    {
+      SDL_FreeSurface(mandelbrot_screen);
+      mandelbrot_screen=NULL;
+    }
+  if (julia_screen)
+    {
+      SDL_FreeSurface(julia_screen);
+      julia_screen=NULL;
+    }
+  mandelbrot_screen = SDL_DisplayFormat(NULL);
+  julia_screen = SDL_DisplayFormat(NULL);
 
   return 0;
 };
