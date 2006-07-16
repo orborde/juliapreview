@@ -27,8 +27,9 @@ SDL_Rect render_rect =
     DEFAULT_SIDELENGTH, DEFAULT_SIDELENGTH
   };
 
+const Uint8 MANDELBROT_ALPHA = 64;
+
 SDL_Surface * screen = NULL;
-const Uint8 mandelbrot_alpha = 128;
 SDL_Surface * mandelbrot_screen = NULL;
 SDL_Surface * julia_screen = NULL;
 
@@ -50,6 +51,10 @@ int RGB_PERIOD = 10;
 
 /* Function prototypes */
 int configure_video(int width, int height);
+// Creates the combined mandelbrot-julia display
+int build_overlay(SDL_Surface * display, SDL_Surface * solid,
+		   SDL_Surface * overlay, SDL_Rect * region);
+
 int inbounds(int x, int y)
 {return (x < SIDELENGTH && y < SIDELENGTH && x >= 0 && y >= 0);}
 
@@ -114,6 +119,13 @@ int main ()
   complex c = {.233, .53780};
   printf("Rendering initial Julia\n");
   draw_julia(julia_screen, julia_region, render_rect, colormap, MAXITERS, c);
+  // Construct the initial visual
+  if (build_overlay(screen, julia_screen,
+		    mandelbrot_screen, &render_rect))
+    {
+      printf("Overlay blit failure!\n");
+      return -1;
+    }
 
   printf("Entering main loop\n");
   // main loop!
@@ -141,6 +153,12 @@ int main ()
 			      colormap, MAXITERS);
 	      draw_julia(julia_screen, julia_region, render_rect,
 			 colormap, MAXITERS, c);
+	      if (build_overlay(screen, julia_screen,
+				mandelbrot_screen, &render_rect))
+		{
+		  printf("Overlay blit failure!\n");
+		  return -1;
+		}
 	      break;
 	    case SDL_KEYDOWN:
 	      switch(event.key.keysym.sym)
@@ -179,7 +197,13 @@ int main ()
 		  render_rect.h;
 		draw_julia(julia_screen, julia_region, render_rect,
 			   colormap, MAXITERS, c);
-	      }	    
+		if (build_overlay(screen, julia_screen,
+				  mandelbrot_screen, &render_rect))
+		  {
+		    printf("Overlay blit failure!\n");
+		    return -1;
+		  }
+	      }
 	  }
       }
     } // main loop
@@ -197,25 +221,44 @@ int configure_video(int width, int height)
   render_rect.h = SIDELENGTH;
 
   // Delete and (re)assign the main screen  
-  screen = SDL_SetVideoMode(SIDELENGTH,SIDELENGTH,32,SDL_SWSURFACE | SDL_RESIZABLE);
+  screen = SDL_SetVideoMode(SIDELENGTH,SIDELENGTH,32,SDL_HWSURFACE | SDL_RESIZABLE);
   if (screen == NULL) { printf("Video modeset failed\n"); return -1; };
 
   // Delete the old backframes, if they exist, and create new ones
-  if (mandelbrot_screen)
-    {
-      SDL_FreeSurface(mandelbrot_screen);
-      mandelbrot_screen=NULL;
-    }
-  if (julia_screen)
-    {
-      SDL_FreeSurface(julia_screen);
-      julia_screen=NULL;
-    }
-  mandelbrot_screen = SDL_DisplayFormat(NULL);
-  julia_screen = SDL_DisplayFormat(NULL);
+  printf("Clearing old screens\n");
+  if (mandelbrot_screen) SDL_FreeSurface(mandelbrot_screen);
+  if (julia_screen) SDL_FreeSurface(julia_screen);
+  printf("Allocating new screens\n");
+  mandelbrot_screen = SDL_DisplayFormat(screen);
+  julia_screen = SDL_DisplayFormat(screen);
 
+  // Set the alpha channel for the mandelbrot
+  SDL_SetAlpha(mandelbrot_screen, SDL_SRCALPHA, MANDELBROT_ALPHA);
+
+  printf("Video (re)allocation complete\n");
   return 0;
 };
+
+int build_overlay(SDL_Surface * display, SDL_Surface * solid,
+		   SDL_Surface * overlay, SDL_Rect * region)
+{
+  // Lock the surface
+  if (SDL_MUSTLOCK(display))
+    if (SDL_LockSurface(display) < 0) return -1;
+
+  if (SDL_BlitSurface(solid, region, display, region) ||
+      SDL_BlitSurface(overlay, region, display, region))
+    return -1;
+ 
+  // unlock teh surface
+  if (SDL_MUSTLOCK(display))
+    SDL_UnlockSurface(display);
+
+  // update!
+  SDL_UpdateRects(display, 1, region);
+
+  return 0;
+}
 
 void putPixel(SDL_Surface * screen, int x, int y, Uint32 color)
 {
