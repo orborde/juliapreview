@@ -83,19 +83,19 @@ int main ()
   /* SDL initialization stuff */
   // init video, check for success
   if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    { printf("Video init failed\n"); return -1; };
+    { fprintf(stderr, "Video init failed\n"); return -1; };
   
   // reg SDL_Quit to be called at exit to clean up
   atexit(SDL_Quit);
   
-  printf("SDL is up and running!\n");
+  fprintf(stderr, "SDL is up and running!\n");
   
   if (configure_video(DEFAULT_SIDELENGTH, DEFAULT_SIDELENGTH))
-    { printf("Video modeset failed\n"); return -1; };
-  printf("Video is set!\n");  
+    { fprintf(stderr, "Video modeset failed\n"); return -1; };
+  fprintf(stderr, "Video is set!\n");  
 
   /*** Our initialization stuff ***/
-  printf("Now setting up fractal things\n");
+  fprintf(stderr, "Now setting up fractal things\n");
   // Fill out the colormap array
   Uint32 colormap[MAXITERS];
   {
@@ -108,26 +108,26 @@ int main ()
   }
   // Draw the mandelbrot
   {
-    printf("Rendering mandelbrot...\n");
+    fprintf(stderr, "Rendering mandelbrot...\n");
     Uint32 start = SDL_GetTicks();
     draw_mandelbrot(mandelbrot_screen, mandelbrot_region, render_rect,
 		    colormap, MAXITERS);
     Uint32 stop = SDL_GetTicks();
-    printf("  Mandelbrot took %lums\n", stop - start);
+    fprintf(stderr, "  Mandelbrot took %lums\n", stop - start);
   }
   // Assign a c and render an initial Julia
   complex c = {.233, .53780};
-  printf("Rendering initial Julia\n");
+  fprintf(stderr, "Rendering initial Julia\n");
   draw_julia(julia_screen, julia_region, render_rect, colormap, MAXITERS, c);
   // Construct the initial visual
   if (build_overlay(screen, julia_screen,
 		    mandelbrot_screen, &render_rect))
     {
-      printf("Overlay blit failure!\n");
+      fprintf(stderr, "Overlay blit failure!\n");
       return -1;
     }
 
-  printf("Entering main loop\n");
+  fprintf(stderr, "Entering main loop\n");
   // main loop!
   while(1)
     {
@@ -144,7 +144,7 @@ int main ()
 	      // Reconfigure video
 	      if (configure_video(event.resize.w, event.resize.h))
 		{
-		  printf("Error on video reconfigure! Quitting...\n");
+		  fprintf(stderr, "Error on video reconfigure! Quitting...\n");
 		  return -1;
 		}
 	      // Redraw the Mandelbrot and current Julia in their new regions
@@ -156,7 +156,7 @@ int main ()
 	      if (build_overlay(screen, julia_screen,
 				mandelbrot_screen, &render_rect))
 		{
-		  printf("Overlay blit failure!\n");
+		  fprintf(stderr, "Overlay blit failure!\n");
 		  return -1;
 		}
 	      break;
@@ -200,7 +200,7 @@ int main ()
 		if (build_overlay(screen, julia_screen,
 				  mandelbrot_screen, &render_rect))
 		  {
-		    printf("Overlay blit failure!\n");
+		    fprintf(stderr, "Overlay blit failure!\n");
 		    return -1;
 		  }
 	      }
@@ -222,20 +222,20 @@ int configure_video(int width, int height)
 
   // Delete and (re)assign the main screen  
   screen = SDL_SetVideoMode(SIDELENGTH,SIDELENGTH,32,SDL_HWSURFACE | SDL_RESIZABLE);
-  if (screen == NULL) { printf("Video modeset failed\n"); return -1; };
+  if (screen == NULL) { fprintf(stderr, "Video modeset failed\n"); return -1; };
 
   // Delete the old backframes, if they exist, and create new ones
-  printf("Clearing old screens\n");
+  fprintf(stderr, "Clearing old screens\n");
   if (mandelbrot_screen) SDL_FreeSurface(mandelbrot_screen);
   if (julia_screen) SDL_FreeSurface(julia_screen);
-  printf("Allocating new screens\n");
+  fprintf(stderr, "Allocating new screens\n");
   mandelbrot_screen = SDL_DisplayFormat(screen);
   julia_screen = SDL_DisplayFormat(screen);
 
   // Set the alpha channel for the mandelbrot
   SDL_SetAlpha(mandelbrot_screen, SDL_SRCALPHA, MANDELBROT_ALPHA);
 
-  printf("Video (re)allocation complete\n");
+  fprintf(stderr, "Video (re)allocation complete\n");
   return 0;
 };
 
@@ -262,7 +262,7 @@ int build_overlay(SDL_Surface * display, SDL_Surface * solid,
 
 void putPixel(SDL_Surface * screen, int x, int y, Uint32 color)
 {
-  //  printf(" %x@%d,%d", color, x, y);
+  //  fprintf(stderr, " %x@%d,%d", color, x, y);
   unsigned int offset =
     x + (screen->pitch >> 2) * y;
   ((Uint32 *) screen->pixels)[offset] = color;
@@ -307,7 +307,7 @@ void draw_mandelbrot(SDL_Surface * screen,
 	    region.topleft.r +
 	    (region.bottomright.r - region.topleft.r) * i / screen_region.w;
 	  unsigned iters = mandelbrot_iterate(c, maxiters);
-	  //	  printf("%lf,%lf=%u(%lu) ", c.r, c.i, iters,colormap[iters]);
+	  //	  fprintf(stderr, "%lf,%lf=%u(%lu) ", c.r, c.i, iters,colormap[iters]);
 	  Uint32 color =
 	    colormap[iters];
 	  putPixel(screen, screen_region.x + i, screen_region.y + j, color);
@@ -364,7 +364,7 @@ void draw_julia(SDL_Surface * screen,
 	    region.topleft.r +
 	    (region.bottomright.r - region.topleft.r) * i / screen_region.w;
 	  unsigned iters = julia_iterate(z,c,2, maxiters);
-	  //	  printf("%lf,%lf=%u(%lu) ", c.r, c.i, iters,colormap[iters]);
+	  //	  fprintf(stderr, "%lf,%lf=%u(%lu) ", c.r, c.i, iters,colormap[iters]);
 	  Uint32 color =
 	    colormap[iters];
 	  putPixel(screen, screen_region.x + i, screen_region.y + j, color);
