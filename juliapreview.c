@@ -1,5 +1,16 @@
+/*
+  juliapreview
+  A tool to show the Julia set of a given Mandelbrot
+
+  USAGE:
+  Can be called with no arguments
+  juliapreview LEFTX TOPY RIGHTX BOTTOMY will set the Mandelbrot's region
+    to the given coordinates
+*/
+
 #include <SDL/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "complex.h"
 
 typedef struct
@@ -21,7 +32,7 @@ SDL_Rect julia_screen;
 
 /* Rendering parameters */
 const Uint32 MAXITERS = 255;
-const complex_region mandelbrot_region =
+complex_region mandelbrot_region =
   {
     {-2, 1.5},
     {1, -1.5}
@@ -60,8 +71,23 @@ unsigned julia_iterate(complex z, const complex c, double escape,
 		       unsigned maxiters);
 
 /* Main Function */
-int main ()
+int main (int argc, char * argv[])
 {
+  /* Fetch commandline arguments */
+  if (argc >= 5)
+    {
+      double leftx = atof(argv[1]);
+      double topy = atof(argv[2]);
+      double rightx = atof(argv[3]);
+      double bottomy = atof(argv[4]);
+
+      complex_region temp = { {leftx, topy}, {rightx, bottomy} };
+      mandelbrot_region = temp;
+
+      fprintf(stderr,"Mandelbrot region set to (%lf,%lf) - (%lf,%lf)\n",
+	      leftx, topy, rightx, bottomy);
+    }
+
   /* SDL initialization stuff */
   // init video, check for success
   if (SDL_Init(SDL_INIT_VIDEO) < 0)
