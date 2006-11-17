@@ -6,13 +6,10 @@ BINFLAGS= $(CFLAGS) $(LDFLAGS)
 all : juliapreview juliapreview2
 
 clean :
-	rm complex.o
+	echo I do nothing
 
-complex.o : complex.h complex.c
-	$(CC) $(CFLAGS) -c complex.c
+juliapreview : complex.h juliapreview.c
+	$(CC) $(BINFLAGS) juliapreview.c -lSDL -o juliapreview
 
-juliapreview : complex.o juliapreview.c
-	$(CC) $(BINFLAGS) complex.o juliapreview.c -lSDL -o juliapreview
-
-juliapreview2 : complex.o juliapreview2.c
-	$(CC) $(BINFLAGS) complex.o juliapreview2.c -lSDL -o juliapreview2
+juliapreview2 : complex.h juliapreview2.c
+	$(CC) $(BINFLAGS) juliapreview2.c -lSDL -o juliapreview2
