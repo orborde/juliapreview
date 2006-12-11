@@ -191,9 +191,9 @@ int main (int argc, char * argv[])
 		  mandelbrot_screen.h;
 		draw_julia(screen, julia_region, julia_screen,
 			   colormap, MAXITERS, c);
-	      }	    
-	  }
-      }
+	      } // In the mandelbrot region?
+	  } // Pressed left mouse button?
+      } // Mouse state reading block
     } // main loop
   return 0;
 }
