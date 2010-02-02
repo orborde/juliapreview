@@ -123,7 +123,7 @@ int main (int argc, char * argv[])
     draw_mandelbrot(screen, mandelbrot_region, mandelbrot_screen,
                     colormap, MAXITERS);
     Uint32 stop = SDL_GetTicks();
-    fprintf(stderr,"  Mandelbrot took %lums\n", stop - start);
+    fprintf(stderr,"  Mandelbrot took %lums\n", (long unsigned) stop - start);
   }
   // Assign a c and render an initial Julia
   complex c = {.233, .53780};
