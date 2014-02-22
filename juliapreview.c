@@ -320,7 +320,7 @@ unsigned iterate(complex z, complex c, unsigned maxiters)
   unsigned iters = 0;
 
   while (++iters < maxiters && complex_sqmag(z) <= 4)
-    z = complex_add(complex_mult(z,complex_mult(z,complex_mult(z,complex_mult(z,complex_mult(z, z))))), c);
+    z = complex_add(complex_mult(z, z), c);
 
   return iters;
 }
